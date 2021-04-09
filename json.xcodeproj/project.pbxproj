@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		0493E83E261FE5E30079289D /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0493E83D261FE5E30079289D /* main.swift */; };
+		0493E846261FF2B00079289D /* JSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0493E845261FF2B00079289D /* JSON.swift */; };
+		0493E849261FF3990079289D /* Parser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0493E848261FF3990079289D /* Parser.swift */; };
+		0493E84C261FF8550079289D /* Pretty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0493E84B261FF8550079289D /* Pretty.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -25,6 +28,9 @@
 /* Begin PBXFileReference section */
 		0493E83A261FE5E30079289D /* json */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = json; sourceTree = BUILT_PRODUCTS_DIR; };
 		0493E83D261FE5E30079289D /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		0493E845261FF2B00079289D /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
+		0493E848261FF3990079289D /* Parser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Parser.swift; sourceTree = "<group>"; };
+		0493E84B261FF8550079289D /* Pretty.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pretty.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +64,9 @@
 			isa = PBXGroup;
 			children = (
 				0493E83D261FE5E30079289D /* main.swift */,
+				0493E845261FF2B00079289D /* JSON.swift */,
+				0493E84B261FF8550079289D /* Pretty.swift */,
+				0493E848261FF3990079289D /* Parser.swift */,
 			);
 			path = json;
 			sourceTree = "<group>";
@@ -120,6 +129,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				0493E83E261FE5E30079289D /* main.swift in Sources */,
+				0493E846261FF2B00079289D /* JSON.swift in Sources */,
+				0493E849261FF3990079289D /* Parser.swift in Sources */,
+				0493E84C261FF8550079289D /* Pretty.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
