@@ -2,6 +2,8 @@
 
 swift json 解析库
 
+* [x] 完成 json 打印
+* [ ] 完成 json 解析
 
 ## 参考:
 
