@@ -11,7 +11,7 @@ import Foundation
 
 func prettyJson(level: Int, json: JSON) -> String {
     switch json {
-    case let .string(s): return s
+    case let .string(s): return refString(s)
     case let .double(n): return "\(n)"
     case let .int(n): return "\(n)"
     case let .bool(b): return b ? "true":"false"
@@ -21,40 +21,58 @@ func prettyJson(level: Int, json: JSON) -> String {
         return "[" + prettyList(level: level, pretty: prettyJson, list: arr) + "]"
     case let .object(obj):
         if obj.isEmpty {return "{}"}
-        return ""
+        return "{" + prettyObject(level: level, pretty: prettyJson, object: obj) + "}"
     }
 }
 
-
+/// element 重复 n 遍
 func replicate<T>(count: Int, elem: T) -> [T] {
     return [T](repeating: elem, count: count)
 }
 
-
-func intersperse<T>(a: T, b:[T]) -> [T] {
-    if b.isEmpty {return []}
-    return [b.x] + prependToAll(a: a, b: b.xs)
+func refString(_ value: String) -> String {
+    return "\"\(value)\""
 }
 
-func prependToAll<T>(a: T, b: [T]) -> [T] {
-    if b.isEmpty {return []}
-    return [a] + [b.x] + prependToAll(a: a, b: b.xs)
-}
-
-func intercalate<T>(a: [T], b: [[T]]) -> [T] {
-    return intersperse(a: a, b: b).flatMap { $0 }
-}
-
-
+//{
+//    "data": [
+//        "a",
+//        "b"
+//    ],
+//    "time": [
+//        {
+//            "a": "test"
+//        },
+//        {
+//            "a": "nice"
+//        }
+//    ]
+//}
 func prettyList(level: Int, pretty: (Int, JSON) -> String, list: [JSON]) -> String {
-    
-    
+    let level1 = level + 4
+    let indent = "\n" + replicate(count: level1, elem: " ")
+    return list.map { (json) -> String in
+        let str = pretty(level1, json)
+        return indent + str
+    }.joined(separator: ",") + "\n" + replicate(count: level, elem: " ")
 }
 
 
 
+//{
+//    "helo": {
+//        "name": {
+//            "test": "a"
+//        }
+//    }
+//}
 func prettyObject(level: Int, pretty: (Int, JSON) -> String, object: [String: JSON]) -> String {
-    
+    let level1 = level + 4
+    let indent = "\n" + replicate(count: level1, elem: " ")
+    return object.map { (key, value) -> String in
+        let str = refString(key) + ":" +  pretty(level1, value)
+        return indent + str
+    }.joined(separator: ",") + "\n" + replicate(count: level, elem: " ")
 }
 
 extension Array {
@@ -64,6 +82,6 @@ extension Array {
     }
     
     var xs: [Element] {
-        return self.dropFirst().map {$0}
+        return self.dropFirst().map { $0 }
     }
 }
