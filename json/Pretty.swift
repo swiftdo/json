@@ -9,7 +9,7 @@ import Foundation
 
 /// JSON 的格式化
 
-func prettyJson(level: Int, json: JSON) -> String {
+func prettyJson(level: Int = 0, json: JSON) -> String {
     switch json {
     case let .string(s): return refString(s)
     case let .double(n): return "\(n)"
