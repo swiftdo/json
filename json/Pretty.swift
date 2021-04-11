@@ -8,7 +8,6 @@
 import Foundation
 
 /// JSON 的格式化
-
 func prettyJson(level: Int = 0, json: JSON) -> String {
     switch json {
     case let .string(s): return refString(s)
@@ -34,20 +33,6 @@ func refString(_ value: String) -> String {
     return "\"\(value)\""
 }
 
-//{
-//    "data": [
-//        "a",
-//        "b"
-//    ],
-//    "time": [
-//        {
-//            "a": "test"
-//        },
-//        {
-//            "a": "nice"
-//        }
-//    ]
-//}
 func prettyList(level: Int, pretty: (Int, JSON) -> String, list: [JSON]) -> String {
     let level1 = level + 4
     let indent = "\n" + replicate(count: level1, elem: " ")
@@ -57,15 +42,6 @@ func prettyList(level: Int, pretty: (Int, JSON) -> String, list: [JSON]) -> Stri
     }.joined(separator: ",") + "\n" + replicate(count: level, elem: " ")
 }
 
-
-
-//{
-//    "helo": {
-//        "name": {
-//            "test": "a"
-//        }
-//    }
-//}
 func prettyObject(level: Int, pretty: (Int, JSON) -> String, object: [String: JSON]) -> String {
     let level1 = level + 4
     let indent = "\n" + replicate(count: level1, elem: " ")
@@ -73,15 +49,4 @@ func prettyObject(level: Int, pretty: (Int, JSON) -> String, object: [String: JS
         let str = refString(key) + ":" +  pretty(level1, value)
         return indent + str
     }.joined(separator: ",") + "\n" + replicate(count: level, elem: " ")
-}
-
-extension Array {
-    
-    var x: Element {
-        return self.first!
-    }
-    
-    var xs: [Element] {
-        return self.dropFirst().map { $0 }
-    }
 }
