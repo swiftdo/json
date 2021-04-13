@@ -46,9 +46,7 @@ extension StringProtocol {
 /// 解析 JSON 字符串为 JSON
 func parseJson(str: String) throws -> JSON {
     var index = 0
-
     // 读取非空白字符
-
     index = readToNonBlankIndex(str: str, index: index)
 
     let ch = str[index]
@@ -63,7 +61,6 @@ func parseJson(str: String) throws -> JSON {
     return try parseObject(str: str, index: index).0
 }
 
-/// "{\"a\":[8,9,10],\"c\":{\"temp\":true,\"say\":\"hello\",\"name\":\"world\"},\"b\":10.2}"
 /// 解析JSON字符串为对象结构
 func parseObject(str: String, index: Int) throws -> (JSON, Int) {
     var ind = index
@@ -154,7 +151,7 @@ func readElement(str: String, index: Int) throws -> (JSON, Int) {
         return try readJsonFalse(str: str, index: ind)
     case "n":
         return try readJsonNull(str: str, index: ind)
-    case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
+    case _ where isNumber(c: c):
         return try readJsonNumber(str: str, index: ind)
     default:
         throw ParserError(msg: "未知 element: \(c)")
@@ -165,7 +162,7 @@ func readJsonNumber(str: String, index: Int) throws -> (JSON, Int) {
     var ind = index - 1
     var value: [Character] = []
     
-    while ind < str.count && isNumber(c: str[ind]) || str[ind] == "." {
+    while ind < str.count && isNumber(c: str[ind]) {
         value.append(str[ind])
         ind += 1
     }
@@ -252,16 +249,8 @@ func readString(str: String, index: Int) throws -> (String, Int) {
     return (String(value), ind)
 }
 
-func isNumber(c: Character) -> Bool {
-    return ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].contains(c)
-}
 
-/// 判断是否为 16 进制字符
-func isHex(c: Character) -> Bool {
-    return c >= "0" && c <= "9" || c >= "a" && c <= "f" || c >= "A" && c <= "F"
-}
-
-/// 读取到非空白字符
+/// 读取到非空白字符, index 指向的是非空白字符的位置
 func readToNonBlankIndex(str: String, index: Int) -> Int {
     var ind = index
     while ind < str.count && str[ind] == " " {
@@ -270,7 +259,7 @@ func readToNonBlankIndex(str: String, index: Int) -> Int {
     return ind
 }
 
-
+/// tools
 func readJsonCharacters(str: String, index: Int, characters: [Character], error: ParserError, json: JSON) throws -> (JSON, Int) {
     var ind = index
     var result = true
@@ -287,3 +276,25 @@ func readJsonCharacters(str: String, index: Int, characters: [Character], error:
     }
     throw error
 }
+
+/// 判断是否是数字字符
+func isNumber(c: Character) -> Bool {
+    
+    let chars:[Character: Bool] = ["-": true, "+": true, "e": true, "E": true, ".": true]
+    
+    if let b = chars[c], b {
+        return true
+    }
+    
+    if(c >= "0" && c <= "9") {
+        return true
+    }
+    
+    return false;
+}
+
+/// 判断是否为 16 进制字符
+func isHex(c: Character) -> Bool {
+    return c >= "0" && c <= "9" || c >= "a" && c <= "f" || c >= "A" && c <= "F"
+}
+
