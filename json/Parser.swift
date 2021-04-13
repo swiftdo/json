@@ -20,25 +20,23 @@ import Foundation
 //   转判断是 true 还是 false
 // * 解析null
 //   转判断是否为 null
-//  ![](https://img2020.cnblogs.com/blog/1988850/202007/1988850-20200720134913661-345556756.png)
 
-enum ParserError: Error {
-    case notFormatterCharacter(msg: String)
-    case unknowEnd(msg: String)
-    case unicode(msg: String)
-    case line(msg: String)
-    case key(msg: String)
-    case character(msg: String)
-    case bool(msg: String)
-    case null(msg: String)
-    case element(msg: String)
-    case number(msg: String)
+struct ParserError: Error, CustomStringConvertible {
+    let message: String
+    
+    init(msg: String) {
+        self.message = msg
+    }
+    
+    var description: String {
+        return "ParserError: \(message)"
+    }
 }
 
 extension StringProtocol {
     subscript(offset: Int) -> Character {
         if offset > count {
-            print("offset 越界:\(offset)")
+            fatalError("offset 越界:\(offset)")
         }
         let c = self[index(startIndex, offsetBy: offset)]
         return c
@@ -74,7 +72,7 @@ func parseObject(str: String, index: Int) throws -> (JSON, Int) {
     repeat {
         ind = readToNonBlankIndex(str: str, index: ind)
         if str[ind] != "\"" {
-            throw ParserError.notFormatterCharacter(msg: "不能识别的字符“\(str[ind])”")
+            throw ParserError(msg: "不能识别的字符“\(str[ind])”")
         }
         ind += 1
 
@@ -83,12 +81,12 @@ func parseObject(str: String, index: Int) throws -> (JSON, Int) {
         ind = ids
 
         if obj.keys.contains(name) {
-            throw ParserError.key(msg: "已经存在key: \(name)")
+            throw ParserError(msg: "已经存在key: \(name)")
         }
         ind = readToNonBlankIndex(str: str, index: ind)
 
         if str[ind] != ":" {
-            throw ParserError.character(msg: "不能识别字符:\(str[ind])")
+            throw ParserError(msg: "不能识别字符:\(str[ind])")
         }
 
         ind += 1
@@ -106,7 +104,7 @@ func parseObject(str: String, index: Int) throws -> (JSON, Int) {
         ind += 1
         if ch == "}" { break }
         if ch != "," {
-            throw ParserError.notFormatterCharacter(msg: "不能识别的字符")
+            throw ParserError(msg: "不能识别的字符")
         }
     } while true
 
@@ -130,7 +128,7 @@ func parseArray(str: String, index: Int) throws -> (JSON, Int) {
         ind += 1
         if ch == "]" { break }
         if ch != "," {
-            throw ParserError.notFormatterCharacter(msg: "不能识别的字符")
+            throw ParserError(msg: "不能识别的字符")
         }
     } while true
 
@@ -159,7 +157,7 @@ func readElement(str: String, index: Int) throws -> (JSON, Int) {
     case "0", "1", "2", "3", "4", "5", "6", "7", "8", "9":
         return try readJsonNumber(str: str, index: ind)
     default:
-        throw ParserError.element(msg: "未知 element: \(c)")
+        throw ParserError(msg: "未知 element: \(c)")
     }
 }
 
@@ -181,7 +179,7 @@ func readJsonNumber(str: String, index: Int) throws -> (JSON, Int) {
             return (.int(v), ind)
         }
     }
-    throw ParserError.number(msg: "不能识别的数字类型\(ind)")
+    throw ParserError(msg: "不能识别的数字类型\(ind)")
 }
 
 
@@ -189,7 +187,7 @@ func readJsonNull(str: String, index: Int) throws -> (JSON, Int) {
     return try readJsonCharacters(str: str,
                                   index: index,
                                   characters: ["u", "l", "l"],
-                                  error: .null(msg: "读取null值出错"),
+                                  error: ParserError(msg: "读取null值出错"),
                                   json: .null)
 }
 
@@ -197,7 +195,7 @@ func readJsonFalse(str: String, index: Int) throws -> (JSON, Int) {
     return try readJsonCharacters(str: str,
                                   index: index,
                                   characters: ["a", "l", "s", "e"],
-                                  error: .bool(msg: "读取false值出错"),
+                                  error: ParserError(msg: "读取false值出错"),
                                   json: .bool(false))
 }
 
@@ -205,7 +203,7 @@ func readJsonTrue(str: String, index: Int) throws -> (JSON, Int) {
     return try readJsonCharacters(str: str,
                                   index: index,
                                   characters: ["r", "u", "e"],
-                                  error: .bool(msg: "读取true值出错"),
+                                  error: ParserError(msg: "读取true值出错"),
                                   json: .bool(true))
 }
 
@@ -222,7 +220,7 @@ func readString(str: String, index: Int) throws -> (String, Int) {
         if c == "\\" { // 判断是否是转义字符
             value.append("\\")
             if ind >= str.count {
-                throw ParserError.unknowEnd(msg: "未知结尾")
+                throw ParserError(msg: "未知结尾")
             }
 
             c = str[ind]
@@ -237,14 +235,14 @@ func readString(str: String, index: Int) throws -> (String, Int) {
                     if isHex(c: c) {
                         value.append(c)
                     } else {
-                        throw ParserError.unicode(msg: "不是有效的unicode 字符")
+                        throw ParserError(msg: "不是有效的unicode 字符")
                     }
                 }
             }
         } else if c == "\"" {
             break
         } else if c == "\r" || c == "\n" {
-            throw ParserError.line(msg: "传入的JSON字符串内容不允许有换行")
+            throw ParserError(msg: "传入的JSON字符串内容不允许有换行")
         } else {
             value.append(c)
         }
