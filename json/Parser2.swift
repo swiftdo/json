@@ -101,12 +101,61 @@ struct JsonTokenizer {
         case "f":
             return try JsonToken.bool(scanMatch(string: "false"))
         case "\"":
-            return nil
+            return try JsonToken.string(scanString())
         case _ where isNumber(c: ch):
             return try JsonToken.number(scanNumbers())
         default:
               throw JsonParserError(msg: "无法解析的字符:\(ch)")
         }
+    }
+    
+    mutating func peekNext() -> Character? {
+        advance()
+        return current
+    }
+    
+    mutating func scanString() throws -> String {
+        var ret:[Character] = []
+        
+        repeat {
+            guard let ch = peekNext() else {
+                throw JsonParserError(msg: "scanString 报错，\(currentIndex) 报错")
+            }
+            switch ch {
+            case "\\": // 处理转义字符
+                
+                guard let cn = peekNext(), !isEscape(c: cn) else {
+                    throw JsonParserError(msg: "无效的特殊类型的字符")
+                }
+                
+                ret.append("\\")
+                ret.append(cn)
+                
+                /// 处理 unicode 编码
+                if cn == "u" {
+                    try ret.append(contentsOf: scanUnicode())
+                }
+                return String(ret)
+            case "\"": // 碰到另一个引号，则认为字符串解析结束
+                return String(ret)
+            case "\r", "\n": // 传入JSON 字符串不允许换行
+                throw JsonParserError(msg: "无效的字符\(ch)")
+            default:
+                ret.append(ch)
+            }
+        } while (true)
+    }
+    
+    mutating func scanUnicode() throws -> [Character] {
+        var ret:[Character] = []
+        for _ in 0..<4 {
+            if let ch = peekNext(), isHex(c: ch) {
+                ret.append(ch)
+            } else {
+                throw JsonParserError(msg: "unicode 字符不规范\(currentIndex)")
+            }
+        }
+        return ret
     }
     
     mutating func scanNumbers() throws -> String {
@@ -120,14 +169,14 @@ struct JsonTokenizer {
         throw JsonParserError(msg: "scanNumbers 出错:\(ind)")
     }
     
-    mutating func scanMatch(string: String) throws -> String {
-        return try scanMatch(characters: string.map { $0 })
-    }
-    
     mutating func scanSpaces() {
         while current != " " {
             advance()
         }
+    }
+    
+    mutating func scanMatch(string: String) throws -> String {
+        return try scanMatch(characters: string.map { $0 })
     }
     
     mutating func scanMatch(characters: [Character]) throws -> String {
@@ -146,7 +195,11 @@ struct JsonTokenizer {
         throw JsonParserError(msg: "scanUntil 不满足 \(characters)")
     }
     
-   
+    func isEscape(c: Character) -> Bool {
+        // \" \\ \u \r \n \b \t \f
+        return ["\"", "\\", "u", "r", "n", "b", "t", "f"].contains(c)
+    }
+    
     /// 判断是否是数字字符
     func isNumber(c: Character) -> Bool {
         
