@@ -33,7 +33,7 @@ enum JsonToken {
     case sepComma // ,
 }
 
-
+/// 分词
 struct JsonTokenizer {
     
     private var input: String
@@ -222,6 +222,56 @@ struct JsonTokenizer {
     }
 
 }
+
+
+struct JsonParser {
+    private var tokenizer: JsonTokenizer
+    
+    private init(text: String) {
+        tokenizer = JsonTokenizer(string: text)
+    }
+    
+    static func parse(text: String) throws -> JSON? {
+        var parser = JsonParser(text: text)
+        return try parser.parse()
+    }
+    
+    
+    private mutating func parseElement() throws -> JSON {
+        
+        
+        
+    }
+    
+    private mutating func parserArr() throws -> [JSON] {
+        
+        
+        
+    }
+    
+    private mutating func parserObj() throws -> [String: JSON] {
+        
+        
+        
+    }
+    
+    private mutating func parse() throws  -> JSON? {
+        guard let token = try tokenizer.nextToken() else {
+            return nil
+        }
+        switch token {
+        case .arrBegin:
+            return try JSON(parserArr())
+        case .objBegin:
+            return try JSON(parserObj())
+        default:
+            return nil
+    }
+    
+        
+}
+
+
 
 
 
