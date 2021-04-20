@@ -20,17 +20,34 @@ struct JsonParserError: Error {
 // 1. 词法分析：按照构词规则将 JSON 字符串解析成 Token 流
 // 2. 语法分析：根据 JSON 文法检查上面 Token 序列所构词的 JSON 结构是否合法
 
-enum JsonToken {
+enum JsonToken: Equatable {
     case objBegin // {
     case objEnd   // }
     case arrBegin // [
     case arrEnd   // ]
-    case null(String)    // null
+    case null    // null
     case number(String)   // 1
     case string(String)   // "a"
     case bool(String)     // true false
     case sepColon // :
     case sepComma // ,
+    
+    static func == (lhs: JsonToken, rhs: JsonToken) -> Bool {
+        switch (lhs, rhs) {
+        case let (.string(l), .string(r)): return l == r
+        case let (.number(l), .number(r)): return l == r
+        case let (.bool(l), .bool(r)): return l == r
+        case (.null, .null): return true
+        case (.objEnd, .objEnd): return true
+        case (.objBegin, .objBegin): return true
+        case (.arrBegin, .arrBegin): return true
+        case (.arrEnd, .arrEnd): return true
+        case (.sepComma, .sepComma): return true
+        case (.sepColon, .sepComma): return true
+        default: return false
+        }
+    }
+    
 }
 
 /// 分词
@@ -71,45 +88,60 @@ struct JsonTokenizer {
         currentIndex = input.index(after: currentIndex)
     }
     
+    private mutating func back() {
+        currentIndex = input.index(before: currentIndex)
+    }
+    
     mutating func nextToken() throws -> JsonToken? {
-        guard let _ = current else {
-            return nil
-        }
         scanSpaces()
-        
         guard let ch = current else {
             return nil
         }
         
+//        print("nextToken::ch:\(ch)")
+        
         switch ch {
         case "{":
+            advance()
             return JsonToken.objBegin
         case "}":
+            advance()
             return JsonToken.objEnd
         case "[":
+            advance()
             return JsonToken.arrBegin
         case "]":
+            advance()
             return JsonToken.arrEnd
         case ",":
+            advance()
             return JsonToken.sepComma
         case ":":
+            advance()
             return JsonToken.sepColon
         case "n":
-            return try JsonToken.null(scanMatch(string: "null"))
+            let _ = try scanMatch(string: "null")
+            advance()
+            return JsonToken.null
         case "t":
-            return try JsonToken.bool(scanMatch(string: "true"))
+            let str = try scanMatch(string: "true")
+            return JsonToken.bool(str)
         case "f":
-            return try JsonToken.bool(scanMatch(string: "false"))
+            let str = try scanMatch(string: "false")
+            return JsonToken.bool(str)
         case "\"":
-            return try JsonToken.string(scanString())
+            let str = try scanString()
+            advance()
+            return JsonToken.string(str)
         case _ where isNumber(c: ch):
-            return try JsonToken.number(scanNumbers())
+            let str = try scanNumbers()
+            return JsonToken.number(str)
         default:
-              throw JsonParserError(msg: "无法解析的字符:\(ch)")
+              throw JsonParserError(msg: "无法解析的字符:\(ch) - \(currentIndex)")
         }
     }
     
-    mutating func peekNext() -> Character? {
+    private mutating func peekNext() -> Character? {
         advance()
         return current
     }
@@ -123,19 +155,15 @@ struct JsonTokenizer {
             }
             switch ch {
             case "\\": // 处理转义字符
-                
                 guard let cn = peekNext(), !isEscape(c: cn) else {
                     throw JsonParserError(msg: "无效的特殊类型的字符")
                 }
-                
                 ret.append("\\")
                 ret.append(cn)
-                
                 /// 处理 unicode 编码
                 if cn == "u" {
                     try ret.append(contentsOf: scanUnicode())
                 }
-                return String(ret)
             case "\"": // 碰到另一个引号，则认为字符串解析结束
                 return String(ret)
             case "\r", "\n": // 传入JSON 字符串不允许换行
@@ -169,9 +197,11 @@ struct JsonTokenizer {
         throw JsonParserError(msg: "scanNumbers 出错:\(ind)")
     }
     
+    /// 跳过空格
     mutating func scanSpaces() {
-        while current != " " {
-            advance()
+        var ch = current
+        while ch != nil && ch == " " {
+            ch = peekNext()
         }
     }
     
@@ -202,9 +232,7 @@ struct JsonTokenizer {
     
     /// 判断是否是数字字符
     func isNumber(c: Character) -> Bool {
-        
         let chars:[Character: Bool] = ["-": true, "+": true, "e": true, "E": true, ".": true]
-        
         if let b = chars[c], b {
             return true
         }
@@ -223,7 +251,7 @@ struct JsonTokenizer {
 
 }
 
-
+// 语法解析
 struct JsonParser {
     private var tokenizer: JsonTokenizer
     
@@ -237,22 +265,97 @@ struct JsonParser {
     }
     
     
-    private mutating func parseElement() throws -> JSON {
+    private mutating func parseElement() throws -> JSON? {
+        guard let nextToken = try tokenizer.nextToken() else {
+            return nil
+        }
         
-        
-        
+        switch nextToken {
+        case .arrBegin:
+            return try JSON(parserArr())
+        case .objBegin:
+            return try JSON(parserObj())
+        case .bool(let b):
+            return .bool(b == "true")
+        case .null:
+            return .null
+        case .string(let str):
+            return .string(str)
+        case .number(let n):
+            if n.contains("."), let v = Double(n) {
+                return .double(v)
+            } else if let v = Int(n) {
+                return .int(v)
+            } else {
+                throw ParserError(msg: "number 转换失败")
+            }
+        default:
+            throw ParserError(msg: "未知 element: \(nextToken)")
+        }
     }
     
     private mutating func parserArr() throws -> [JSON] {
-        
-        
-        
+        var arr: [JSON] = []
+        repeat {
+            guard let ele = try parseElement() else {
+                throw ParserError(msg: "parserArr 解析失败")
+            }
+            arr.append(ele)
+            
+            guard let next = try tokenizer.nextToken() else {
+                throw ParserError(msg: "parserArr 解析失败")
+            }
+            
+            if case JsonToken.arrEnd = next {
+                break
+            }
+            
+            if JsonToken.sepComma != next { // ","
+                throw ParserError(msg: "parserArr 解析失败")
+            }
+            
+        } while true
+
+        return arr
     }
     
     private mutating func parserObj() throws -> [String: JSON] {
-        
-        
-        
+        var obj: [String: JSON] = [:]
+
+        repeat {
+            
+            guard let next = try tokenizer.nextToken(), case let .string(key) = next else {
+                throw ParserError(msg: "parserObj 错误, key 不存在")
+            }
+            
+            if obj.keys.contains(key) {
+                throw ParserError(msg: "parserObj 错误, 已经存在key: \(key)")
+            }
+            
+            guard let comma = try tokenizer.nextToken(), case JsonToken.sepColon = comma else {
+                throw ParserError(msg: "parserObj 错误，：不存在")
+            }
+            
+            guard let value = try parseElement() else {
+                throw ParserError(msg: "parserObj 错误，值不存在")
+            }
+            
+            obj[key] = value
+            
+            guard let nex = try tokenizer.nextToken() else {
+                throw ParserError(msg: "parserObj 错误， 下一个值不存在")
+            }
+            
+            if case JsonToken.objEnd = nex {
+                break
+            }
+            
+            if JsonToken.sepComma != nex {
+                throw ParserError(msg: "parserObj 错误，, 不存在")
+            }
+        } while true
+
+        return obj
     }
     
     private mutating func parse() throws  -> JSON? {
@@ -266,9 +369,9 @@ struct JsonParser {
             return try JSON(parserObj())
         default:
             return nil
+        }
     }
     
-        
 }
 
 

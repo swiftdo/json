@@ -37,6 +37,19 @@ do {
 }
 
 
+/// 通过 paser2.0 进行解析
+do {
+    if let result2 = try JsonParser.parse(text: str) {
+        print("\n\n✅ Parser2.0 返回结果：")
+        print(prettyJson(json: result2))
+    } else {
+        print("\n\n❎ Parser2 解析为空")
+    }
+} catch {
+    print("\n\n❎ Paser2.0 error:\(error)")
+}
+
+
 
 
 
