@@ -68,19 +68,10 @@ struct JsonTokenizer {
         return input[currentIndex]
     }
     
-    /// 上一个字符
-    private var previous: Character? {
-        guard currentIndex > input.startIndex else {return nil}
-        let index = input.index(before: currentIndex)
-        return input[index]
-    }
-    
-    /// 下一个字符
-    private var next: Character? {
-        guard currentIndex < input.endIndex else {return nil}
-        let index = input.index(after: currentIndex)
-        guard index < input.endIndex else {return nil}
-        return input[index]
+    /// 移动到下一个且返回其值
+    private mutating func peekNext() -> Character? {
+        advance()
+        return current
     }
     
     /// 移动下标
@@ -98,7 +89,7 @@ struct JsonTokenizer {
             return nil
         }
         
-//        print("nextToken::ch:\(ch)")
+//      print("nextToken::ch:\(ch)")
         
         switch ch {
         case "{":
@@ -139,11 +130,6 @@ struct JsonTokenizer {
         default:
               throw JsonParserError(msg: "无法解析的字符:\(ch) - \(currentIndex)")
         }
-    }
-    
-    private mutating func peekNext() -> Character? {
-        advance()
-        return current
     }
     
     mutating func scanString() throws -> String {
@@ -248,7 +234,6 @@ struct JsonTokenizer {
     func isHex(c: Character) -> Bool {
         return c >= "0" && c <= "9" || c >= "a" && c <= "f" || c >= "A" && c <= "F"
     }
-
 }
 
 // 语法解析
